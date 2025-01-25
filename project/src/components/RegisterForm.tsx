@@ -5,12 +5,13 @@ import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+// Update the schema to use number for departmentId
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   firstName: z.string().min(2, 'First name is required'),
   lastName: z.string().min(2, 'Last name is required'),
-  departmentId: z.string().optional(),
+  departmentId: z.number().optional(), // Change to number
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -28,10 +29,7 @@ export function RegisterForm() {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await registerUser({
-        ...data,
-        departmentId: data.departmentId ? parseInt(data.departmentId) : undefined,
-      });
+      await registerUser(data); // Pass data directly
       navigate('/');
     } catch (err) {
       // Error is handled by the AuthContext
@@ -40,85 +38,36 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
-          type="email"
-          id="email"
-          {...register('email')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        />
-        {errors.email && (
-          <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <input
-          type="password"
-          id="password"
-          {...register('password')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        />
-        {errors.password && (
-          <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-          First Name
-        </label>
-        <input
-          type="text"
-          id="firstName"
-          {...register('firstName')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        />
-        {errors.firstName && (
-          <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-          Last Name
-        </label>
-        <input
-          type="text"
-          id="lastName"
-          {...register('lastName')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        />
-        {errors.lastName && (
-          <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="departmentId" className="block text-sm font-medium text-gray-700">
-          Department
-        </label>
-        <select
-          id="departmentId"
-          {...register('departmentId')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        >
-          <option value="">Select a department</option>
-          <option value="1">Computer Science</option>
-          <option value="2">Electronics</option>
-          <option value="3">Mechanical</option>
-          <option value="4">Civil</option>
-        </select>
-        {errors.departmentId && (
-          <p className="mt-1 text-sm text-red-600">{errors.departmentId.message}</p>
-        )}
-      </div>
+      {[
+        { label: 'Email', id: 'email', type: 'email' },
+        { label: 'Password', id: 'password', type: 'password' },
+        { label: 'First Name', id: 'firstName', type: 'text' },
+        { label: 'Last Name', id: 'lastName', type: 'text' },
+        { label: 'Department ID', id: 'departmentId', type: 'number' }, // Add departmentId as a number input
+      ].map((field) => (
+        <div key={field.id}>
+          <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
+            {field.label}
+          </label>
+          <input
+            type={field.type}
+            id={field.id}
+            {...register(field.id as keyof RegisterFormData, {
+              valueAsNumber: field.type === 'number', // Convert to number if the type is number
+            })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            aria-describedby={`${field.id}-error`}
+          />
+          {errors[field.id as keyof RegisterFormData] && (
+            <p
+              id={`${field.id}-error`}
+              className="mt-1 text-sm text-red-600"
+            >
+              {errors[field.id as keyof RegisterFormData]?.message}
+            </p>
+          )}
+        </div>
+      ))}
 
       {error && (
         <div className="rounded-md bg-red-50 p-4">
